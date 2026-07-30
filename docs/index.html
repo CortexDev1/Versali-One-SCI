@@ -1,0 +1,812 @@
+docs/index.html
+<title>Versali Labs — Agent Mission Control</title>
+<style>
+:root{
+  --bg:#F5F4F0;--surface:#ECEAE4;--elevated:#FFFFFF;
+  --text-1:#0F172A;--text-2:#475569;--text-3:#94A3B8;
+  --border:#D4D0C8;
+  --versali:#1B6B4A;--versali-subtle:rgba(27,107,74,0.07);
+  --agent:#10B981;--agent-glow:rgba(16,185,129,0.12);
+  --attention:#F59E0B;--attention-glow:rgba(245,158,11,0.08);
+  --critical:#EF4444;--critical-glow:rgba(239,68,68,0.08);
+  --info:#3B82F6;--info-glow:rgba(59,130,246,0.08);
+  --sidebar-bg:#070A12;--sidebar-border:#1E293B;--sidebar-text:#64748B;--sidebar-active:#F1F5F9;
+  --radius:10px;--radius-sm:6px;
+  --font:-apple-system,"Segoe UI",system-ui,sans-serif;
+  --mono:"SF Mono","Cascadia Code","Fira Code",ui-monospace,monospace;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0B0F1A;--surface:#111827;--elevated:#1A2236;
+  --text-1:#F1F5F9;--text-2:#94A3B8;--text-3:#64748B;
+  --border:#1E293B;
+  --versali:#2DD4A0;--versali-subtle:rgba(45,212,160,0.08);
+  --agent-glow:rgba(16,185,129,0.18);
+  --attention-glow:rgba(245,158,11,0.12);
+  --critical-glow:rgba(239,68,68,0.12);
+  --info-glow:rgba(59,130,246,0.12);
+}}
+:root[data-theme="dark"]{
+  --bg:#0B0F1A;--surface:#111827;--elevated:#1A2236;
+  --text-1:#F1F5F9;--text-2:#94A3B8;--text-3:#64748B;
+  --border:#1E293B;
+  --versali:#2DD4A0;--versali-subtle:rgba(45,212,160,0.08);
+  --agent-glow:rgba(16,185,129,0.18);
+  --attention-glow:rgba(245,158,11,0.12);
+  --critical-glow:rgba(239,68,68,0.12);
+  --info-glow:rgba(59,130,246,0.12);
+}
+:root[data-theme="light"]{
+  --bg:#F5F4F0;--surface:#ECEAE4;--elevated:#FFFFFF;
+  --text-1:#0F172A;--text-2:#475569;--text-3:#94A3B8;
+  --border:#D4D0C8;
+  --versali:#1B6B4A;--versali-subtle:rgba(27,107,74,0.07);
+  --agent-glow:rgba(16,185,129,0.12);
+  --attention-glow:rgba(245,158,11,0.08);
+  --critical-glow:rgba(239,68,68,0.08);
+  --info-glow:rgba(59,130,246,0.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+#app{display:flex;height:100vh;width:100%;font-family:var(--font);background:var(--bg);color:var(--text-1);-webkit-font-smoothing:antialiased;}
+
+/* ── Sidebar ── */
+.sidebar{width:56px;height:100vh;background:var(--sidebar-bg);display:flex;flex-direction:column;align-items:center;padding:14px 0;flex-shrink:0;border-right:1px solid var(--sidebar-border);position:relative;z-index:10;}
+.sidebar-logo{width:32px;height:32px;border-radius:8px;background:var(--versali);display:flex;align-items:center;justify-content:center;margin-bottom:24px;flex-shrink:0;}
+.sidebar-logo svg{width:18px;height:18px;fill:#fff;}
+.sidebar-nav{display:flex;flex-direction:column;gap:2px;width:100%;padding:0 8px;}
+.nav-item{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sidebar-text);cursor:pointer;position:relative;transition:all .15s;}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:#C9D1D9;}
+.nav-item.active{color:var(--sidebar-active);background:rgba(255,255,255,0.08);}
+.nav-item.active::before{content:'';position:absolute;left:-8px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--agent);}
+.nav-item svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item .tip{position:absolute;left:52px;background:#1F2937;color:#F3F4F6;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:500;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:20;}
+.nav-item:hover .tip{opacity:1;}
+.nav-badge{position:absolute;top:4px;right:2px;min-width:16px;height:16px;border-radius:8px;background:var(--attention);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;}
+.sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 8px;}
+.sidebar-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--versali),var(--info));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;cursor:pointer;}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+
+/* ── Command Bar ── */
+.command-bar{padding:16px 28px 0;flex-shrink:0;}
+.cmd-wrap{position:relative;background:var(--elevated);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 16px;transition:border-color .2s,box-shadow .2s;}
+.cmd-wrap:focus-within{border-color:var(--agent);box-shadow:0 0 0 3px var(--agent-glow);}
+.cmd-icon{width:20px;height:20px;stroke:var(--text-3);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;}
+.cmd-input{flex:1;border:none;background:none;font-size:14px;font-family:var(--font);color:var(--text-1);padding:13px 0;outline:none;}
+.cmd-input::placeholder{color:var(--text-3);}
+.cmd-hint{font-size:11px;color:var(--text-3);white-space:nowrap;display:flex;align-items:center;gap:4px;}
+.cmd-hint kbd{font-family:var(--font);font-size:10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px;}
+.cmd-response{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);display:none;z-index:5;animation:cmdSlide .2s ease;}
+.cmd-response.show{display:block;}
+@keyframes cmdSlide{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.cmd-agent-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--agent);margin-bottom:6px;}
+.cmd-agent-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--agent);}
+.cmd-response-text{font-size:13px;line-height:1.65;color:var(--text-2);}
+.cmd-response-text strong{color:var(--text-1);font-weight:600;}
+.cmd-response-close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--text-3);cursor:pointer;font-size:16px;line-height:1;padding:4px;}
+
+/* ── Content ── */
+.content-area{flex:1;overflow-y:auto;padding:20px 28px 28px;}
+.content-area::-webkit-scrollbar{width:6px;}.content-area::-webkit-scrollbar-track{background:transparent;}.content-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.page{display:none;}.page.active{display:block;}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:700;letter-spacing:-0.02em;}
+.page-sub{font-size:13px;color:var(--text-3);margin-top:3px;}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-3);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-label .count{background:var(--attention);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;border:none;cursor:pointer;transition:all .15s;font-family:var(--font);}
+.btn-approve{background:var(--agent);color:#fff;}.btn-approve:hover{filter:brightness(1.1);}
+.btn-warn{background:var(--attention);color:#fff;}.btn-warn:hover{filter:brightness(1.1);}
+.btn-ghost{background:none;color:var(--text-2);border:1px solid var(--border);}.btn-ghost:hover{background:var(--surface);color:var(--text-1);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+
+/* ── Attention Cards (Decision Gates) ── */
+.attention-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-bottom:28px;}
+.att-card{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;transition:border-color .15s;overflow:hidden;}
+.att-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.att-card.amber::before{background:var(--attention);}
+.att-card.red::before{background:var(--critical);}
+.att-card.green::before{background:var(--agent);}
+.att-card.blue::before{background:var(--info);}
+.att-card:hover{border-color:var(--text-3);}
+.att-agent{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.att-agent-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;}
+.att-agent-name.scout{color:var(--info);}
+.att-agent-name.negotiator{color:var(--agent);}
+.att-agent-name.sentinel{color:var(--attention);}
+.att-agent-name.analyst{color:#A78BFA;}
+.att-agent-name.tracker{color:#2DD4BF;}
+.att-agent-name.guardian{color:var(--text-3);}
+.att-title{font-size:14px;font-weight:600;letter-spacing:-0.01em;margin-bottom:6px;line-height:1.35;}
+.att-desc{font-size:12.5px;color:var(--text-2);line-height:1.55;margin-bottom:12px;}
+.att-meta{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;}
+.att-meta-item{display:flex;flex-direction:column;gap:1px;}
+.att-meta-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-3);}
+.att-meta-value{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;}
+.att-meta-value.high{color:var(--agent);}
+.att-meta-value.mid{color:var(--attention);}
+.att-meta-value.low{color:var(--critical);}
+.att-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.att-evidence{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2);line-height:1.6;}
+.att-evidence.open{display:block;animation:fadeIn .2s ease;}
+.att-evidence strong{color:var(--text-1);font-weight:600;}
+.att-card.approved{opacity:0.5;pointer-events:none;position:relative;}
+.att-card.approved::after{content:'Approved';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:16px;font-weight:700;color:var(--agent);text-transform:uppercase;letter-spacing:0.1em;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* ── Agent Fleet Tiles ── */
+.fleet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:28px;}
+.fleet-tile{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s;}
+.fleet-tile:hover{border-color:var(--agent);}
+.fleet-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.fleet-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.fleet-dot.active{background:var(--agent);animation:pulse 2s ease infinite;}
+.fleet-dot.waiting{background:var(--attention);animation:pulse 2s ease infinite;}
+.fleet-dot.processing{background:var(--info);animation:pulse 2.5s ease infinite;}
+.fleet-dot.idle{background:var(--text-3);}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--agent-glow);}50%{box-shadow:0 0 0 5px transparent;}}
+.fleet-name{font-size:13px;font-weight:600;letter-spacing:-0.01em;}
+.fleet-role{font-size:10px;color:var(--text-3);font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin-left:auto;}
+.fleet-task{font-size:11.5px;color:var(--text-2);line-height:1.45;margin-bottom:8px;min-height:34px;}
+.fleet-stats{display:flex;gap:12px;}
+.fleet-stat{display:flex;flex-direction:column;gap:0;}
+.fleet-stat-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-3);}
+.fleet-stat-value{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
+
+/* ── Ops Feed ── */
+.ops-feed{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.ops-feed-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.ops-feed-title{font-size:13px;font-weight:600;}
+.ops-feed-live{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--agent);font-weight:600;}
+.ops-feed-live .dot{width:6px;height:6px;border-radius:50%;background:var(--agent);animation:pulse 2s ease infinite;}
+.ops-list{padding:6px 0;max-height:280px;overflow-y:auto;}
+.ops-item{display:flex;gap:12px;padding:8px 18px;font-size:12px;transition:background .1s;}
+.ops-item:hover{background:var(--surface);}
+.ops-time{font-family:var(--mono);font-size:11px;color:var(--text-3);white-space:nowrap;width:56px;flex-shrink:0;padding-top:1px;}
+.ops-agent-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;padding:1px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0;}
+.ops-agent-label.scout{background:var(--info-glow);color:var(--info);}
+.ops-agent-label.negotiator{background:var(--agent-glow);color:var(--agent);}
+.ops-agent-label.sentinel{background:var(--attention-glow);color:var(--attention);}
+.ops-agent-label.analyst{background:rgba(167,139,250,0.1);color:#A78BFA;}
+.ops-agent-label.tracker{background:rgba(45,212,191,0.1);color:#2DD4BF;}
+.ops-agent-label.guardian{background:var(--surface);color:var(--text-3);}
+.ops-text{color:var(--text-2);line-height:1.45;}.ops-text strong{color:var(--text-1);font-weight:600;}
+
+/* ── Decision Queue Page ── */
+.decision-stack{display:flex;flex-direction:column;gap:16px;}
+.dec-card{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;position:relative;overflow:hidden;}
+.dec-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.dec-card.amber::before{background:var(--attention);}
+.dec-card.red::before{background:var(--critical);}
+.dec-card.green::before{background:var(--agent);}
+.dec-card.blue::before{background:var(--info);}
+.dec-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.dec-agent{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;}
+.dec-priority{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;}
+.dec-priority.high{background:var(--critical-glow);color:var(--critical);}
+.dec-priority.medium{background:var(--attention-glow);color:var(--attention);}
+.dec-priority.low{background:var(--agent-glow);color:var(--agent);}
+.dec-title{font-size:16px;font-weight:600;letter-spacing:-0.02em;margin-bottom:8px;line-height:1.3;}
+.dec-body{font-size:13px;color:var(--text-2);line-height:1.65;margin-bottom:16px;}
+.dec-metrics{display:flex;gap:24px;margin-bottom:16px;flex-wrap:wrap;}
+.dec-metric{display:flex;flex-direction:column;gap:2px;}
+.dec-metric-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-3);}
+.dec-metric-value{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;}
+.confidence-bar{width:100px;height:6px;background:var(--surface);border-radius:3px;overflow:hidden;margin-top:4px;}
+.confidence-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.dec-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.dec-evidence{display:none;margin-top:16px;padding:16px;background:var(--surface);border-radius:var(--radius-sm);font-size:12.5px;color:var(--text-2);line-height:1.6;}
+.dec-evidence.open{display:block;animation:fadeIn .2s ease;}
+.dec-evidence h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-3);margin-bottom:6px;}
+.dec-evidence ul{margin:4px 0 10px 16px;}.dec-evidence li{margin-bottom:3px;}
+.dec-evidence strong{color:var(--text-1);}
+
+/* ── Agent Fleet Detail Page ── */
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;}
+@media(max-width:860px){.agent-grid{grid-template-columns:1fr;}}
+.agent-card{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);padding:22px;overflow:hidden;}
+.agent-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.agent-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.agent-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.agent-icon.scout{background:var(--info);}
+.agent-icon.negotiator{background:var(--agent);}
+.agent-icon.sentinel{background:var(--attention);}
+.agent-icon.tracker{background:#2DD4BF;}
+.agent-icon.analyst{background:#A78BFA;}
+.agent-icon.guardian{background:var(--text-3);}
+.agent-info{flex:1;}
+.agent-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;}
+.agent-role{font-size:11px;color:var(--text-3);font-weight:500;}
+.agent-status{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;}
+.agent-status.active{background:var(--agent-glow);color:var(--agent);}
+.agent-status.waiting{background:var(--attention-glow);color:var(--attention);}
+.agent-status.processing{background:var(--info-glow);color:var(--info);}
+.agent-status.idle{background:var(--surface);color:var(--text-3);}
+.agent-current{font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:14px;padding:10px 12px;background:var(--surface);border-radius:var(--radius-sm);}
+.agent-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.agent-stat{text-align:center;padding:8px 4px;background:var(--surface);border-radius:var(--radius-sm);}
+.agent-stat-val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;}
+.agent-stat-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-3);margin-top:1px;}
+.agent-actions-list{display:flex;flex-direction:column;gap:0;}
+.agent-action{display:flex;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px solid var(--border);}
+.agent-action:last-child{border-bottom:none;}
+.agent-action-time{font-family:var(--mono);font-size:10px;color:var(--text-3);white-space:nowrap;width:60px;flex-shrink:0;padding-top:2px;}
+.agent-action-text{color:var(--text-2);line-height:1.45;}
+
+/* ── Intelligence Page ── */
+.intel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+@media(max-width:900px){.intel-grid{grid-template-columns:1fr;}}
+.intel-card{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.intel-card-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.intel-card-agent{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;}
+.intel-card-title{font-size:14px;font-weight:600;margin-bottom:6px;}
+.intel-card-body{font-size:12.5px;color:var(--text-2);line-height:1.55;}
+.intel-card-metric{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;margin:4px 0;}
+.intel-card-change{font-size:12px;font-weight:500;display:flex;align-items:center;gap:3px;}
+.intel-card-change.up{color:var(--critical);}.intel-card-change.down{color:var(--agent);}
+.intel-card-change svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;}
+.signals-list{display:flex;flex-direction:column;gap:0;}
+.signal-item{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;transition:background .1s;}
+.signal-item:hover{background:var(--surface);}
+.signal-item:last-child{border-bottom:none;}
+.signal-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.signal-text{font-size:13px;line-height:1.55;color:var(--text-2);}.signal-text strong{color:var(--text-1);font-weight:600;}
+.signal-time{font-size:11px;color:var(--text-3);margin-top:2px;}
+
+/* ── Supply Network Page ── */
+.supplier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.sup-card{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .15s;}
+.sup-card:hover{border-color:var(--agent);}
+.sup-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.sup-name{font-size:15px;font-weight:600;}
+.sup-rec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:3px 8px;border-radius:12px;background:var(--agent-glow);color:var(--agent);}
+.sup-loc{font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px;margin-bottom:14px;}
+.sup-loc svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;}
+.sup-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.sup-stat-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-3);}
+.sup-stat-value{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;}
+.sup-agent-notes{padding:10px 12px;background:var(--surface);border-radius:var(--radius-sm);margin-bottom:12px;}
+.sup-agent-note{display:flex;gap:6px;font-size:11px;color:var(--text-2);line-height:1.5;margin-bottom:4px;}
+.sup-agent-note:last-child{margin-bottom:0;}
+.sup-agent-note strong{color:var(--text-1);}
+.sup-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.sup-tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:12px;background:var(--versali-subtle);color:var(--versali);}
+
+/* ── Utility ── */
+.card{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:13px;font-weight:600;}
+@media(max-width:640px){.attention-grid{grid-template-columns:1fr;}.fleet-grid{grid-template-columns:1fr 1fr;}.intel-grid{grid-template-columns:1fr;}}
+@media(max-width:480px){.fleet-grid{grid-template-columns:1fr;}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+
+<div id="app">
+<nav class="sidebar">
+  <div class="sidebar-logo"><svg viewBox="0 0 24 24"><path d="M12 2L4 8v12h16V8L12 2zm0 3.5L17 9v8H7V9l5-3.5z"/></svg></div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" data-page="mission" onclick="go('mission')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+      <span class="tip">Mission Control</span>
+    </div>
+    <div class="nav-item" data-page="decisions" onclick="go('decisions')">
+      <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span class="nav-badge">4</span>
+      <span class="tip">Decisions</span>
+    </div>
+    <div class="nav-item" data-page="agents" onclick="go('agents')">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+      <span class="tip">Agent Fleet</span>
+    </div>
+    <div class="nav-item" data-page="intel" onclick="go('intel')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="tip">Intelligence</span>
+    </div>
+    <div class="nav-item" data-page="network" onclick="go('network')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span class="tip">Supply Network</span>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="tip">Settings</span></div>
+    <div class="sidebar-avatar">RC</div>
+  </div>
+</nav>
+
+<div class="main">
+  <!-- Command Bar -->
+  <div class="command-bar">
+    <div class="cmd-wrap" id="cmdWrap">
+      <svg class="cmd-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <input class="cmd-input" id="cmdInput" type="text" placeholder="Ask your agents... try &quot;find organic cotton suppliers in Turkey under $15&quot;" autocomplete="off">
+      <div class="cmd-hint"><kbd>Enter</kbd> to ask</div>
+      <div class="cmd-response" id="cmdResponse">
+        <button class="cmd-response-close" onclick="closeCmdResponse()">&times;</button>
+        <div class="cmd-agent-tag"><span class="dot"></span><span id="cmdRespAgent">SCOUT</span></div>
+        <div class="cmd-response-text" id="cmdRespText"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-area">
+
+    <!-- ═══════ MISSION CONTROL ═══════ -->
+    <div class="page active" id="page-mission">
+      <div class="page-head">
+        <div><div class="page-title">Mission Control</div><div class="page-sub" id="mcDate"></div></div>
+      </div>
+
+      <div class="section-label">Attention Required <span class="count">3</span></div>
+      <div class="attention-grid">
+        <div class="att-card amber" id="att1">
+          <div class="att-agent"><span class="att-agent-name negotiator">Negotiator</span></div>
+          <div class="att-title">Accept Zenith Textiles quote for VL-2471</div>
+          <div class="att-desc">Zenith submitted <strong>$13.80/unit</strong> for Organic Cotton Crewneck — 4.8% below your $14.50 target and 2.1% below the next-best quote from GreenWeave.</div>
+          <div class="att-meta">
+            <div class="att-meta-item"><span class="att-meta-label">Confidence</span><span class="att-meta-value high">94%</span></div>
+            <div class="att-meta-item"><span class="att-meta-label">Impact</span><span class="att-meta-value">-$1,680</span></div>
+            <div class="att-meta-item"><span class="att-meta-label">Respond by</span><span class="att-meta-value">Aug 2</span></div>
+          </div>
+          <div class="att-actions">
+            <button class="btn btn-approve btn-sm" onclick="approveCard('att1')">Approve</button>
+            <button class="btn btn-ghost btn-sm">Counter</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleEvidence('att1-ev')">Why?</button>
+          </div>
+          <div class="att-evidence" id="att1-ev"><strong>Evidence:</strong> Compared 3 quotes received for VL-2471. Zenith's $13.80 is the lowest. Their historical cost variance on 14 prior orders is +0.3%, well within tolerance. Quality score 97.2%, on-time 94%. GreenWeave quoted $14.10, Pacific Stitch $14.45. Recommendation confidence is high because all three data signals (price, quality, reliability) align.</div>
+        </div>
+
+        <div class="att-card red" id="att2">
+          <div class="att-agent"><span class="att-agent-name sentinel">Sentinel</span></div>
+          <div class="att-title">Color fastness failure — batch #B-4401</div>
+          <div class="att-desc">Linen Utility Shirt from GreenWeave. Delta E measured <strong>3.2</strong> vs threshold of 2.0. This is GreenWeave's second color issue in 6 months.</div>
+          <div class="att-meta">
+            <div class="att-meta-item"><span class="att-meta-label">Confidence</span><span class="att-meta-value mid">88%</span></div>
+            <div class="att-meta-item"><span class="att-meta-label">At Risk</span><span class="att-meta-value" style="color:var(--critical)">$13,440</span></div>
+            <div class="att-meta-item"><span class="att-meta-label">Ships in</span><span class="att-meta-value">48h</span></div>
+          </div>
+          <div class="att-actions">
+            <button class="btn btn-warn btn-sm" onclick="approveCard('att2')">Hold Shipment</button>
+            <button class="btn btn-ghost btn-sm">Release</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleEvidence('att2-ev')">Why?</button>
+          </div>
+          <div class="att-evidence" id="att2-ev"><strong>Evidence:</strong> QC inspection QC-0447 on Jul 22 measured Delta E at 3.2 (threshold: 2.0). Cross-referenced with GreenWeave history: a similar issue occurred in Feb 2026 on batch B-4189 (Delta E 2.8). Root cause in Feb was insufficient dye fixation time. SENTINEL's risk model now rates GreenWeave color fastness at 73% reliability (down from 91%). Recommendation: hold + request root cause analysis before releasing the 1,200 units.</div>
+        </div>
+
+        <div class="att-card green" id="att3">
+          <div class="att-agent"><span class="att-agent-name scout">Scout</span></div>
+          <div class="att-title">2 new certified suppliers for Recycled Nylon RFQ</div>
+          <div class="att-desc">Found <strong>EcoTex Innovations</strong> (Istanbul, $36.20) and <strong>RecyFiber Co.</strong> (Seoul, $35.80) — both beat your $38.75 target by 7-8%.</div>
+          <div class="att-meta">
+            <div class="att-meta-item"><span class="att-meta-label">Confidence</span><span class="att-meta-value high">91%</span></div>
+            <div class="att-meta-item"><span class="att-meta-label">Savings</span><span class="att-meta-value">~$3,000</span></div>
+            <div class="att-meta-item"><span class="att-meta-label">RFQ Deadline</span><span class="att-meta-value">Aug 15</span></div>
+          </div>
+          <div class="att-actions">
+            <button class="btn btn-approve btn-sm" onclick="approveCard('att3')">Add to RFQ</button>
+            <button class="btn btn-ghost btn-sm">Request Samples</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleEvidence('att3-ev')">Why?</button>
+          </div>
+          <div class="att-evidence" id="att3-ev"><strong>Evidence:</strong> Searched 847 suppliers across Turkey, Vietnam, South Korea, and Japan for GRS-certified recycled nylon capacity. EcoTex Innovations: GRS + GOTS dual-certified, 96% quality score across 22 verified orders (via third-party audit), 3 outerwear references. RecyFiber Co.: GRS + OEKO-TEX, 94% quality, newer entrant but strong references from 2 European brands. Both meet VL-2465 spec requirements. EcoTex has the stronger track record; RecyFiber is 1.1% cheaper.</div>
+        </div>
+      </div>
+
+      <div class="section-label">Agent Fleet</div>
+      <div class="fleet-grid">
+        <div class="fleet-tile" onclick="go('agents')">
+          <div class="fleet-head"><span class="fleet-dot active"></span><span class="fleet-name">SCOUT</span><span class="fleet-role">Sourcing</span></div>
+          <div class="fleet-task">Scanning Turkey/Vietnam markets for recycled nylon</div>
+          <div class="fleet-stats"><div class="fleet-stat"><span class="fleet-stat-val">4</span><span class="fleet-stat-label">Today</span></div><div class="fleet-stat"><span class="fleet-stat-val">127</span><span class="fleet-stat-label">Month</span></div><div class="fleet-stat"><span class="fleet-stat-val" style="color:var(--agent)">92%</span><span class="fleet-stat-label">Conf.</span></div></div>
+        </div>
+        <div class="fleet-tile" onclick="go('agents')">
+          <div class="fleet-head"><span class="fleet-dot waiting"></span><span class="fleet-name">NEGOTIATOR</span><span class="fleet-role">Terms</span></div>
+          <div class="fleet-task">Quote comparison for VL-2468 ready for review</div>
+          <div class="fleet-stats"><div class="fleet-stat"><span class="fleet-stat-val">2</span><span class="fleet-stat-label">Today</span></div><div class="fleet-stat"><span class="fleet-stat-val">38</span><span class="fleet-stat-label">Month</span></div><div class="fleet-stat"><span class="fleet-stat-val" style="color:var(--agent)">94%</span><span class="fleet-stat-label">Conf.</span></div></div>
+        </div>
+        <div class="fleet-tile" onclick="go('agents')">
+          <div class="fleet-head"><span class="fleet-dot active"></span><span class="fleet-name">SENTINEL</span><span class="fleet-role">Quality</span></div>
+          <div class="fleet-task">Monitoring 3 active inspections</div>
+          <div class="fleet-stats"><div class="fleet-stat"><span class="fleet-stat-val">1</span><span class="fleet-stat-label">Today</span></div><div class="fleet-stat"><span class="fleet-stat-val">23</span><span class="fleet-stat-label">Month</span></div><div class="fleet-stat"><span class="fleet-stat-val" style="color:var(--attention)">88%</span><span class="fleet-stat-label">Conf.</span></div></div>
+        </div>
+        <div class="fleet-tile" onclick="go('agents')">
+          <div class="fleet-head"><span class="fleet-dot active"></span><span class="fleet-name">TRACKER</span><span class="fleet-role">Logistics</span></div>
+          <div class="fleet-task">Tracking 5 shipments across 3 carriers</div>
+          <div class="fleet-stats"><div class="fleet-stat"><span class="fleet-stat-val">0</span><span class="fleet-stat-label">Today</span></div><div class="fleet-stat"><span class="fleet-stat-val">15</span><span class="fleet-stat-label">Month</span></div><div class="fleet-stat"><span class="fleet-stat-val" style="color:var(--agent)">96%</span><span class="fleet-stat-label">Conf.</span></div></div>
+        </div>
+        <div class="fleet-tile" onclick="go('agents')">
+          <div class="fleet-head"><span class="fleet-dot processing"></span><span class="fleet-name">ANALYST</span><span class="fleet-role">Market</span></div>
+          <div class="fleet-task">Processing Q3 cotton futures impact analysis</div>
+          <div class="fleet-stats"><div class="fleet-stat"><span class="fleet-stat-val">1</span><span class="fleet-stat-label">Today</span></div><div class="fleet-stat"><span class="fleet-stat-val">19</span><span class="fleet-stat-label">Month</span></div><div class="fleet-stat"><span class="fleet-stat-val" style="color:var(--attention)">82%</span><span class="fleet-stat-label">Conf.</span></div></div>
+        </div>
+        <div class="fleet-tile" onclick="go('agents')">
+          <div class="fleet-head"><span class="fleet-dot idle"></span><span class="fleet-name">GUARDIAN</span><span class="fleet-role">Compliance</span></div>
+          <div class="fleet-task">All compliance checks passed — idle</div>
+          <div class="fleet-stats"><div class="fleet-stat"><span class="fleet-stat-val">0</span><span class="fleet-stat-label">Today</span></div><div class="fleet-stat"><span class="fleet-stat-val">8</span><span class="fleet-stat-label">Month</span></div><div class="fleet-stat"><span class="fleet-stat-val" style="color:var(--agent)">99%</span><span class="fleet-stat-label">Conf.</span></div></div>
+        </div>
+      </div>
+
+      <div class="section-label">Operations Feed</div>
+      <div class="ops-feed">
+        <div class="ops-feed-head"><span class="ops-feed-title">Live Agent Activity</span><span class="ops-feed-live"><span class="dot"></span>Streaming</span></div>
+        <div class="ops-list">
+          <div class="ops-item"><span class="ops-time">just now</span><span class="ops-agent-label scout">Scout</span><span class="ops-text">Found <strong>2 GRS-certified suppliers</strong> matching VL-2465 recycled nylon spec</span></div>
+          <div class="ops-item"><span class="ops-time">12m ago</span><span class="ops-agent-label negotiator">Negotiator</span><span class="ops-text">Recommended accepting Zenith Textiles quote — <strong>$13.80/unit</strong> (4.8% below target)</span></div>
+          <div class="ops-item"><span class="ops-time">45m ago</span><span class="ops-agent-label analyst">Analyst</span><span class="ops-text">Generated cotton price alert: <strong>+8.3% this month</strong>, Q4 exposure +$2,400</span></div>
+          <div class="ops-item"><span class="ops-time">1h ago</span><span class="ops-agent-label tracker">Tracker</span><span class="ops-text">ETA updated for <strong>SMP-0892</strong> from HCMC — arrives Aug 3 (on time)</span></div>
+          <div class="ops-item"><span class="ops-time">2h ago</span><span class="ops-agent-label negotiator">Negotiator</span><span class="ops-text">Counter-offered GreenWeave on VL-2460 at <strong>$10.80/unit</strong> — accepted</span></div>
+          <div class="ops-item"><span class="ops-time">3h ago</span><span class="ops-agent-label sentinel">Sentinel</span><span class="ops-text">Flagged color fastness failure on <strong>batch #B-4401</strong> — Delta E 3.2 vs 2.0 threshold</span></div>
+          <div class="ops-item"><span class="ops-time">3h ago</span><span class="ops-agent-label sentinel">Sentinel</span><span class="ops-text">Updated <strong>GreenWeave</strong> risk profile after second color issue in 6 months</span></div>
+          <div class="ops-item"><span class="ops-time">4h ago</span><span class="ops-agent-label scout">Scout</span><span class="ops-text">Rejected 3 suppliers below quality threshold (&lt;90%) for outerwear category</span></div>
+          <div class="ops-item"><span class="ops-time">6h ago</span><span class="ops-agent-label guardian">Guardian</span><span class="ops-text">Verified <strong>GOTS certification renewal</strong> for Zenith Textiles — valid through 2027</span></div>
+          <div class="ops-item"><span class="ops-time">yesterday</span><span class="ops-agent-label tracker">Tracker</span><span class="ops-text">Flagged potential 2-day delay on <strong>PO-1184</strong> — Dhaka port congestion</span></div>
+          <div class="ops-item"><span class="ops-time">yesterday</span><span class="ops-agent-label analyst">Analyst</span><span class="ops-text">Completed supplier cost benchmarking report — 4 suppliers within 5% of market median</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ DECISION QUEUE ═══════ -->
+    <div class="page" id="page-decisions">
+      <div class="page-head"><div><div class="page-title">Decision Queue</div><div class="page-sub">Agent recommendations awaiting your judgment</div></div></div>
+      <div class="decision-stack">
+
+        <div class="dec-card green" id="dec1">
+          <div class="dec-header"><span class="dec-agent" style="color:var(--agent)">NEGOTIATOR</span><span class="dec-priority medium">Medium</span></div>
+          <div class="dec-title">Accept Quote: Zenith Textiles for Organic Cotton Crewneck</div>
+          <div class="dec-body">Zenith Textiles submitted <strong>$13.80/unit</strong> for VL-2471. This is 4.8% below your $14.50 target and 2.1% below the next-best quote from GreenWeave ($14.10). Zenith's quality score is 97.2% with 94% on-time delivery. Based on 14 prior orders, their actual cost variance is +0.3%.</div>
+          <div class="dec-metrics">
+            <div class="dec-metric"><span class="dec-metric-label">Confidence</span><span class="dec-metric-value" style="color:var(--agent)">94%</span><div class="confidence-bar"><div class="confidence-fill" style="width:94%;background:var(--agent)"></div></div></div>
+            <div class="dec-metric"><span class="dec-metric-label">Financial Impact</span><span class="dec-metric-value">-$1,680 vs target</span></div>
+            <div class="dec-metric"><span class="dec-metric-label">Respond by</span><span class="dec-metric-value">Aug 2, 2026</span></div>
+            <div class="dec-metric"><span class="dec-metric-label">Alternatives</span><span class="dec-metric-value">2 other quotes</span></div>
+          </div>
+          <div class="dec-actions">
+            <button class="btn btn-approve" onclick="approveCard('dec1')"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Approve Quote</button>
+            <button class="btn btn-ghost">Counter at $13.50</button>
+            <button class="btn btn-ghost">Reject</button>
+            <button class="btn btn-ghost" onclick="toggleEvidence('dec1-ev')">Show Evidence</button>
+          </div>
+          <div class="dec-evidence" id="dec1-ev">
+            <h4>Comparison Matrix</h4>
+            <ul><li><strong>Zenith Textiles:</strong> $13.80/unit · Quality 97.2% · On-time 94% · 14 prior orders</li><li><strong>GreenWeave:</strong> $14.10/unit · Quality 94.8% · On-time 91% · 5 prior orders</li><li><strong>Pacific Stitch:</strong> $14.45/unit · Quality 96.1% · On-time 97% · 2 prior orders</li></ul>
+            <h4>Historical Performance</h4>
+            <ul><li>Zenith average cost variance: <strong>+0.3%</strong> (within tolerance)</li><li>Zero quality rejections in last 12 months</li><li>Average lead time: 28 days (spec: 30 days)</li></ul>
+            <h4>Risk Assessment</h4>
+            <ul><li>Currency risk (TRY): hedged via USD-denominated contract</li><li>Capacity: Zenith currently at 72% utilization — sufficient headroom</li></ul>
+          </div>
+        </div>
+
+        <div class="dec-card red" id="dec2">
+          <div class="dec-header"><span class="dec-agent" style="color:var(--attention)">SENTINEL</span><span class="dec-priority high">High</span></div>
+          <div class="dec-title">Hold Shipment: Color Fastness Failure on Batch #B-4401</div>
+          <div class="dec-body">Color fastness test failed for Linen Utility Shirt from GreenWeave. Delta E measured at <strong>3.2</strong> vs threshold of 2.0. This is GreenWeave's <strong>second color issue in 6 months</strong>. 1,200 units ($13,440) ship in 48 hours. SENTINEL recommends holding shipment and requesting root cause analysis.</div>
+          <div class="dec-metrics">
+            <div class="dec-metric"><span class="dec-metric-label">Confidence</span><span class="dec-metric-value" style="color:var(--attention)">88%</span><div class="confidence-bar"><div class="confidence-fill" style="width:88%;background:var(--attention)"></div></div></div>
+            <div class="dec-metric"><span class="dec-metric-label">At Risk</span><span class="dec-metric-value" style="color:var(--critical)">$13,440</span></div>
+            <div class="dec-metric"><span class="dec-metric-label">Ships in</span><span class="dec-metric-value">48 hours</span></div>
+            <div class="dec-metric"><span class="dec-metric-label">Supplier Risk</span><span class="dec-metric-value" style="color:var(--attention)">Elevated</span></div>
+          </div>
+          <div class="dec-actions">
+            <button class="btn btn-warn" onclick="approveCard('dec2')"><svg viewBox="0 0 24 24"><path d="M18.36 6.64A9 9 0 0 1 20.77 15M2 12a10 10 0 0 0 18 6"/><line x1="2" y1="12" x2="6" y2="12"/></svg>Hold Shipment</button>
+            <button class="btn btn-ghost">Release Anyway</button>
+            <button class="btn btn-ghost">Request Re-test</button>
+            <button class="btn btn-ghost" onclick="toggleEvidence('dec2-ev')">Show Evidence</button>
+          </div>
+          <div class="dec-evidence" id="dec2-ev">
+            <h4>Test Results</h4>
+            <ul><li>Inspection ID: <strong>QC-0447</strong> · Date: Jul 22, 2026</li><li>Delta E (color deviation): <strong>3.2</strong> (threshold: 2.0, fail)</li><li>Seam strength: <strong>91%</strong> (pass)</li><li>GSM accuracy: <strong>within spec</strong></li></ul>
+            <h4>Supplier History</h4>
+            <ul><li>Feb 2026: Batch B-4189, Delta E <strong>2.8</strong> (also failed) — root cause: insufficient dye fixation time</li><li>GreenWeave color fastness reliability dropped from <strong>91% → 73%</strong> after this incident</li><li>Other quality metrics remain stable (seam, GSM, shrinkage)</li></ul>
+            <h4>Financial Analysis</h4>
+            <ul><li>1,200 units × $11.20/unit = <strong>$13,440</strong> at risk</li><li>Re-dyeing cost estimate: ~$2,800 (if GreenWeave absorbs 60% per contract terms)</li><li>Delay impact: 8-12 days if re-test required</li></ul>
+          </div>
+        </div>
+
+        <div class="dec-card blue" id="dec3">
+          <div class="dec-header"><span class="dec-agent" style="color:var(--info)">SCOUT</span><span class="dec-priority low">Low</span></div>
+          <div class="dec-title">New Suppliers Found for Recycled Nylon Parka RFQ</div>
+          <div class="dec-body">Two GRS-certified suppliers match VL-2465 criteria. <strong>EcoTex Innovations</strong> (Istanbul, $36.20/unit, 96% quality) and <strong>RecyFiber Co.</strong> (Seoul, $35.80/unit, 94% quality). Both beat your $38.75 target. EcoTex has 3 verified outerwear references.</div>
+          <div class="dec-metrics">
+            <div class="dec-metric"><span class="dec-metric-label">Confidence</span><span class="dec-metric-value" style="color:var(--agent)">91%</span><div class="confidence-bar"><div class="confidence-fill" style="width:91%;background:var(--agent)"></div></div></div>
+            <div class="dec-metric"><span class="dec-metric-label">Potential Savings</span><span class="dec-metric-value" style="color:var(--agent)">~$3,000</span></div>
+            <div class="dec-metric"><span class="dec-metric-label">RFQ Deadline</span><span class="dec-metric-value">Aug 15</span></div>
+          </div>
+          <div class="dec-actions">
+            <button class="btn btn-approve" onclick="approveCard('dec3')"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add to RFQ</button>
+            <button class="btn btn-ghost">Request Samples</button>
+            <button class="btn btn-ghost">Dismiss</button>
+            <button class="btn btn-ghost" onclick="toggleEvidence('dec3-ev')">Show Evidence</button>
+          </div>
+          <div class="dec-evidence" id="dec3-ev">
+            <h4>Search Parameters</h4>
+            <ul><li>Searched <strong>847 suppliers</strong> across Turkey, Vietnam, South Korea, Japan</li><li>Filters: GRS-certified, recycled nylon, minimum 1,000 pcs capacity, outerwear experience</li><li>Results: 2 qualified (0.24% hit rate — these are genuinely differentiated)</li></ul>
+            <h4>EcoTex Innovations (Istanbul)</h4>
+            <ul><li>Price: <strong>$36.20/unit</strong> (6.6% below target)</li><li>Certifications: GRS + GOTS</li><li>Quality: 96% across 22 verified orders</li><li>References: 3 European outerwear brands</li></ul>
+            <h4>RecyFiber Co. (Seoul)</h4>
+            <ul><li>Price: <strong>$35.80/unit</strong> (7.6% below target)</li><li>Certifications: GRS + OEKO-TEX</li><li>Quality: 94% (newer entrant, 8 verified orders)</li><li>References: 2 European brands</li></ul>
+          </div>
+        </div>
+
+        <div class="dec-card amber" id="dec4">
+          <div class="dec-header"><span class="dec-agent" style="color:#A78BFA">ANALYST</span><span class="dec-priority medium">Medium</span></div>
+          <div class="dec-title">Cotton Price Alert: Lock Q4 Pricing Within 5 Days</div>
+          <div class="dec-body">Cotton futures rose <strong>8.3% this month</strong>. Your Q4 orders (VL-2471, VL-2460) use ~12,000kg of organic cotton. At current rates, your material cost basis increases by ~$2,400. ANALYST recommends locking pricing with current suppliers within 5 business days.</div>
+          <div class="dec-metrics">
+            <div class="dec-metric"><span class="dec-metric-label">Confidence</span><span class="dec-metric-value" style="color:var(--attention)">82%</span><div class="confidence-bar"><div class="confidence-fill" style="width:82%;background:var(--attention)"></div></div></div>
+            <div class="dec-metric"><span class="dec-metric-label">Exposure</span><span class="dec-metric-value" style="color:var(--critical)">+$2,400</span></div>
+            <div class="dec-metric"><span class="dec-metric-label">Window</span><span class="dec-metric-value">5 business days</span></div>
+          </div>
+          <div class="dec-actions">
+            <button class="btn btn-approve" onclick="approveCard('dec4')"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Initiate Lock</button>
+            <button class="btn btn-ghost">Monitor Only</button>
+            <button class="btn btn-ghost">Dismiss</button>
+            <button class="btn btn-ghost" onclick="toggleEvidence('dec4-ev')">Show Evidence</button>
+          </div>
+          <div class="dec-evidence" id="dec4-ev">
+            <h4>Market Data</h4>
+            <ul><li>ICE Cotton No. 2 futures: <strong>+8.3%</strong> (Jun 28 → Jul 28)</li><li>Organic premium tracking at <strong>22% above conventional</strong> (stable)</li><li>Monsoon forecast: below-average rainfall in key growing regions (India, Pakistan)</li></ul>
+            <h4>Exposure Calculation</h4>
+            <ul><li>VL-2471: 2,400 pcs × ~3.2kg cotton/pc = <strong>7,680kg</strong></li><li>VL-2460: 3,000 pcs × ~1.5kg cotton/pc = <strong>4,500kg</strong></li><li>Total: 12,180kg × $0.20/kg increase = <strong>~$2,436</strong></li></ul>
+            <h4>Recommendation Basis</h4>
+            <ul><li>Historical pattern: monsoon-driven spikes take 3-6 weeks to peak</li><li>Lock-in window with current suppliers: contractually 5 business days</li><li>Confidence is 82% (not higher) because futures can reverse on weather updates</li></ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════ AGENT FLEET ═══════ -->
+    <div class="page" id="page-agents">
+      <div class="page-head"><div><div class="page-title">Agent Fleet</div><div class="page-sub">6 specialized agents operating your supply chain 24/7</div></div></div>
+      <div class="agent-grid">
+
+        <div class="agent-card">
+          <div class="agent-header"><div class="agent-icon scout"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="agent-info"><div class="agent-name">SCOUT</div><div class="agent-role">Sourcing &amp; Discovery</div></div><div class="agent-status active"><span class="fleet-dot active" style="width:6px;height:6px;"></span>Active</div></div>
+          <div class="agent-current">Scanning 847 suppliers across Turkey, Vietnam, Bangladesh, and South Korea for recycled nylon with GRS certification matching VL-2465 spec requirements.</div>
+          <div class="agent-stats-row"><div class="agent-stat"><div class="agent-stat-val">4</div><div class="agent-stat-lbl">Today</div></div><div class="agent-stat"><div class="agent-stat-val">127</div><div class="agent-stat-lbl">Month</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">99.7%</div><div class="agent-stat-lbl">Uptime</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">92%</div><div class="agent-stat-lbl">Conf.</div></div></div>
+          <div class="agent-actions-list">
+            <div class="agent-action"><span class="agent-action-time">12 min ago</span><span class="agent-action-text">Found 2 GRS-certified suppliers matching VL-2465 recycled nylon spec</span></div>
+            <div class="agent-action"><span class="agent-action-time">2h ago</span><span class="agent-action-text">Qualified Pacific Stitch for outerwear category expansion</span></div>
+            <div class="agent-action"><span class="agent-action-time">4h ago</span><span class="agent-action-text">Rejected 3 suppliers below 90% quality threshold</span></div>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-header"><div class="agent-icon negotiator"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="agent-info"><div class="agent-name">NEGOTIATOR</div><div class="agent-role">Quote Analysis &amp; Terms</div></div><div class="agent-status waiting"><span class="fleet-dot waiting" style="width:6px;height:6px;"></span>Awaiting</div></div>
+          <div class="agent-current">Quote comparison for Merino Wool Bomber (VL-2468) complete — 5 quotes analyzed, ranked by value-weighted scoring. Awaiting your review of the top recommendation.</div>
+          <div class="agent-stats-row"><div class="agent-stat"><div class="agent-stat-val">2</div><div class="agent-stat-lbl">Today</div></div><div class="agent-stat"><div class="agent-stat-val">38</div><div class="agent-stat-lbl">Month</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">99.9%</div><div class="agent-stat-lbl">Uptime</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">94%</div><div class="agent-stat-lbl">Conf.</div></div></div>
+          <div class="agent-actions-list">
+            <div class="agent-action"><span class="agent-action-time">12 min ago</span><span class="agent-action-text">Recommended Zenith Textiles quote for VL-2471 (pending approval)</span></div>
+            <div class="agent-action"><span class="agent-action-time">2h ago</span><span class="agent-action-text">Counter-offered GreenWeave on VL-2460 at $10.80/unit — accepted</span></div>
+            <div class="agent-action"><span class="agent-action-time">yesterday</span><span class="agent-action-text">Benchmarked Alpina Mills pricing vs market — 4% premium justified by quality</span></div>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-header"><div class="agent-icon sentinel"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="agent-info"><div class="agent-name">SENTINEL</div><div class="agent-role">Quality &amp; Inspection</div></div><div class="agent-status active"><span class="fleet-dot active" style="width:6px;height:6px;"></span>Monitoring</div></div>
+          <div class="agent-current">Monitoring 3 active QC inspections: QC-0451 (Zenith, complete), QC-0453 (Pacific Stitch, in progress), QC-0455 (Alpina Mills, scheduled). GreenWeave flagged for elevated risk.</div>
+          <div class="agent-stats-row"><div class="agent-stat"><div class="agent-stat-val">1</div><div class="agent-stat-lbl">Today</div></div><div class="agent-stat"><div class="agent-stat-val">23</div><div class="agent-stat-lbl">Month</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">99.8%</div><div class="agent-stat-lbl">Uptime</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--attention)">88%</div><div class="agent-stat-lbl">Conf.</div></div></div>
+          <div class="agent-actions-list">
+            <div class="agent-action"><span class="agent-action-time">3h ago</span><span class="agent-action-text">Flagged color fastness failure on batch #B-4401 (pending escalation)</span></div>
+            <div class="agent-action"><span class="agent-action-time">3h ago</span><span class="agent-action-text">Updated GreenWeave risk profile: color reliability 91% → 73%</span></div>
+            <div class="agent-action"><span class="agent-action-time">6h ago</span><span class="agent-action-text">Approved seam strength test for Zenith Textiles — all within spec</span></div>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-header"><div class="agent-icon tracker"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="agent-info"><div class="agent-name">TRACKER</div><div class="agent-role">Logistics &amp; Delivery</div></div><div class="agent-status active"><span class="fleet-dot active" style="width:6px;height:6px;"></span>Active</div></div>
+          <div class="agent-current">Tracking 5 active shipments across Maersk, MSC, and Evergreen carriers. 4 on schedule, 1 flagged for potential delay (PO-1184, Dhaka port congestion).</div>
+          <div class="agent-stats-row"><div class="agent-stat"><div class="agent-stat-val">0</div><div class="agent-stat-lbl">Today</div></div><div class="agent-stat"><div class="agent-stat-val">15</div><div class="agent-stat-lbl">Month</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">99.5%</div><div class="agent-stat-lbl">Uptime</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">96%</div><div class="agent-stat-lbl">Conf.</div></div></div>
+          <div class="agent-actions-list">
+            <div class="agent-action"><span class="agent-action-time">1h ago</span><span class="agent-action-text">ETA updated for SMP-0892 from HCMC — arrives Aug 3 (on time)</span></div>
+            <div class="agent-action"><span class="agent-action-time">yesterday</span><span class="agent-action-text">Flagged potential 2-day delay on PO-1184 (Dhaka port congestion)</span></div>
+            <div class="agent-action"><span class="agent-action-time">yesterday</span><span class="agent-action-text">Confirmed customs clearance for PO-1180 at Vancouver port</span></div>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-header"><div class="agent-icon analyst"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="agent-info"><div class="agent-name">ANALYST</div><div class="agent-role">Cost &amp; Market Intelligence</div></div><div class="agent-status processing"><span class="fleet-dot processing" style="width:6px;height:6px;"></span>Processing</div></div>
+          <div class="agent-current">Analyzing Q3 cotton futures data and calculating impact on current order book. Cross-referencing monsoon forecasts with historical price correlation models.</div>
+          <div class="agent-stats-row"><div class="agent-stat"><div class="agent-stat-val">1</div><div class="agent-stat-lbl">Today</div></div><div class="agent-stat"><div class="agent-stat-val">19</div><div class="agent-stat-lbl">Month</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">99.6%</div><div class="agent-stat-lbl">Uptime</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--attention)">82%</div><div class="agent-stat-lbl">Conf.</div></div></div>
+          <div class="agent-actions-list">
+            <div class="agent-action"><span class="agent-action-time">45 min ago</span><span class="agent-action-text">Generated cotton price alert: +8.3% monthly, +$2,400 Q4 exposure</span></div>
+            <div class="agent-action"><span class="agent-action-time">yesterday</span><span class="agent-action-text">Completed supplier cost benchmarking — 4 suppliers within 5% of median</span></div>
+            <div class="agent-action"><span class="agent-action-time">2 days ago</span><span class="agent-action-text">Updated seasonal demand forecast for Q4 based on order pipeline</span></div>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-header"><div class="agent-icon guardian"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="agent-info"><div class="agent-name">GUARDIAN</div><div class="agent-role">Risk &amp; Compliance</div></div><div class="agent-status idle"><span class="fleet-dot idle" style="width:6px;height:6px;"></span>All Clear</div></div>
+          <div class="agent-current">All compliance checks passed. No active alerts. Next scheduled audit: UFLPA traceability review for 2 new suppliers (EcoTex, RecyFiber) pending SCOUT qualification.</div>
+          <div class="agent-stats-row"><div class="agent-stat"><div class="agent-stat-val">0</div><div class="agent-stat-lbl">Today</div></div><div class="agent-stat"><div class="agent-stat-val">8</div><div class="agent-stat-lbl">Month</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">99.9%</div><div class="agent-stat-lbl">Uptime</div></div><div class="agent-stat"><div class="agent-stat-val" style="color:var(--agent)">99%</div><div class="agent-stat-lbl">Conf.</div></div></div>
+          <div class="agent-actions-list">
+            <div class="agent-action"><span class="agent-action-time">today</span><span class="agent-action-text">Verified GOTS certification renewal for Zenith Textiles — valid through 2027</span></div>
+            <div class="agent-action"><span class="agent-action-time">yesterday</span><span class="agent-action-text">Completed UFLPA traceability check on 3 suppliers — all clear</span></div>
+            <div class="agent-action"><span class="agent-action-time">3 days ago</span><span class="agent-action-text">Archived expired BSCI audit for supplier S-0044</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════ INTELLIGENCE ═══════ -->
+    <div class="page" id="page-intel">
+      <div class="page-head"><div><div class="page-title">Intelligence</div><div class="page-sub">Predictions, market signals, and agent learning</div></div></div>
+
+      <div class="section-label">Predictions</div>
+      <div class="intel-grid">
+        <div class="intel-card">
+          <div class="intel-card-head"><span class="intel-card-agent" style="color:#A78BFA">ANALYST</span></div>
+          <div class="intel-card-title">Cotton Price Trend</div>
+          <div class="intel-card-metric" style="color:var(--critical)">+8.3%</div>
+          <div class="intel-card-change up"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>Rising — monsoon impact</div>
+          <div class="intel-card-body" style="margin-top:8px">Organic cotton futures up 8.3% this month. Below-average monsoon forecasts in India and Pakistan suggest continued upward pressure through Q3. Lock pricing recommended within 5 days.</div>
+        </div>
+        <div class="intel-card">
+          <div class="intel-card-head"><span class="intel-card-agent" style="color:var(--attention)">SENTINEL</span></div>
+          <div class="intel-card-title">GreenWeave Quality Risk</div>
+          <div class="intel-card-metric" style="color:var(--attention)">15%</div>
+          <div class="intel-card-change up"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>Probability of another color issue (30d)</div>
+          <div class="intel-card-body" style="margin-top:8px">Based on 2 color fastness failures in 6 months, SENTINEL's risk model predicts a 15% chance of recurrence. Underlying issue appears systemic (dye fixation process). Recommend conditional hold on new GreenWeave orders pending root cause resolution.</div>
+        </div>
+        <div class="intel-card">
+          <div class="intel-card-head"><span class="intel-card-agent" style="color:#2DD4BF">TRACKER</span></div>
+          <div class="intel-card-title">Q4 Delivery Risk</div>
+          <div class="intel-card-metric" style="color:var(--attention)">2 of 8</div>
+          <div class="intel-card-change up"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>Orders with &gt;20% delay probability</div>
+          <div class="intel-card-body" style="margin-top:8px">PO-1184 (Dhaka) and PO-1192 (Istanbul) flagged for delay risk. Dhaka port congestion is the primary factor — average wait time increased from 2 to 5 days this month. Istanbul risk is seasonal (Bayram holiday period).</div>
+        </div>
+      </div>
+
+      <div class="section-label">Market Signals</div>
+      <div class="card" style="margin-bottom:24px">
+        <div class="signals-list">
+          <div class="signal-item"><div class="signal-dot" style="background:var(--critical)"></div><div><div class="signal-text"><strong>Vietnam labor costs up 4.2% YoY</strong> — affects Pacific Stitch and 3 other suppliers in HCMC cluster. ANALYST flagged for Q4 pricing renegotiation.</div><div class="signal-time">2 hours ago · ANALYST</div></div></div>
+          <div class="signal-item"><div class="signal-dot" style="background:var(--info)"></div><div><div class="signal-text"><strong>EU Textile Sustainability Regulation</strong> draft published — new traceability requirements for recycled content claims. GUARDIAN reviewing implications for GRS-certified suppliers.</div><div class="signal-time">Yesterday · GUARDIAN</div></div></div>
+          <div class="signal-item"><div class="signal-dot" style="background:var(--agent)"></div><div><div class="signal-text"><strong>Bangladesh port infrastructure upgrade</strong> — expected 15% throughput improvement by Q1 2027. TRACKER adjusting lead time models for Dhaka-origin shipments.</div><div class="signal-time">2 days ago · TRACKER</div></div></div>
+          <div class="signal-item"><div class="signal-dot" style="background:var(--attention)"></div><div><div class="signal-text"><strong>UFLPA enforcement update</strong> — 3 new detained shipments in cotton sector (not Versali suppliers). GUARDIAN cross-referenced all active suppliers — no exposure.</div><div class="signal-time">3 days ago · GUARDIAN</div></div></div>
+        </div>
+      </div>
+
+      <div class="section-label">Agent Learning</div>
+      <div class="card">
+        <div class="signals-list">
+          <div class="signal-item"><div class="signal-dot" style="background:var(--info)"></div><div><div class="signal-text"><strong>SCOUT</strong> expanded certified supplier database from 234 to 289 this month (+23%). Strongest growth in recycled materials category.</div><div class="signal-time">This month</div></div></div>
+          <div class="signal-item"><div class="signal-dot" style="background:var(--agent)"></div><div><div class="signal-text"><strong>NEGOTIATOR</strong> learned that Alpina Mills responds 40% faster to volume-based counter-offers vs. flat price counters. Updating negotiation templates.</div><div class="signal-time">This week</div></div></div>
+          <div class="signal-item"><div class="signal-dot" style="background:var(--attention)"></div><div><div class="signal-text"><strong>SENTINEL</strong> updated color fastness risk model after GreenWeave incidents. Model now weights supplier dye process documentation as a leading indicator.</div><div class="signal-time">3 days ago</div></div></div>
+          <div class="signal-item"><div class="signal-dot" style="background:#A78BFA"></div><div><div class="signal-text"><strong>ANALYST</strong> improved cotton price prediction accuracy from 74% to 81% after incorporating monsoon satellite data as an input variable.</div><div class="signal-time">This month</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ SUPPLY NETWORK ═══════ -->
+    <div class="page" id="page-network">
+      <div class="page-head"><div><div class="page-title">Supply Network</div><div class="page-sub">Verified manufacturing partners — agent-monitored 24/7</div></div></div>
+      <div class="supplier-grid">
+
+        <div class="sup-card">
+          <div class="sup-top"><span class="sup-name">Zenith Textiles</span><span class="sup-rec">Agent Recommended</span></div>
+          <div class="sup-loc"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Istanbul, Turkey</div>
+          <div class="sup-stats"><div><span class="sup-stat-label">Quality</span><div class="sup-stat-value" style="color:var(--agent)">97.2%</div></div><div><span class="sup-stat-label">On-Time</span><div class="sup-stat-value">94%</div></div><div><span class="sup-stat-label">Orders</span><div class="sup-stat-value">14</div></div></div>
+          <div class="sup-agent-notes">
+            <div class="sup-agent-note"><strong>NEGOTIATOR:</strong> Quote of $13.80/unit pending approval — best in class</div>
+            <div class="sup-agent-note"><strong>GUARDIAN:</strong> GOTS certification renewed, valid through 2027</div>
+            <div class="sup-agent-note"><strong>SCOUT:</strong> Verified 2 days ago — capacity at 72%</div>
+          </div>
+          <div class="sup-tags"><span class="sup-tag">Knitwear</span><span class="sup-tag">GOTS</span><span class="sup-tag">OEKO-TEX</span></div>
+        </div>
+
+        <div class="sup-card">
+          <div class="sup-top"><span class="sup-name">GreenWeave</span></div>
+          <div class="sup-loc"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Dhaka, Bangladesh</div>
+          <div class="sup-stats"><div><span class="sup-stat-label">Quality</span><div class="sup-stat-value" style="color:var(--attention)">94.8%</div></div><div><span class="sup-stat-label">On-Time</span><div class="sup-stat-value">91%</div></div><div><span class="sup-stat-label">Orders</span><div class="sup-stat-value">5</div></div></div>
+          <div class="sup-agent-notes">
+            <div class="sup-agent-note"><strong>SENTINEL:</strong> <span style="color:var(--critical)">Risk elevated</span> — 2 color issues in 6 months</div>
+            <div class="sup-agent-note"><strong>NEGOTIATOR:</strong> Accepted counter at $10.80/unit on VL-2460</div>
+            <div class="sup-agent-note"><strong>TRACKER:</strong> PO-1184 flagged for port delay — ETA +2 days</div>
+          </div>
+          <div class="sup-tags"><span class="sup-tag">Woven</span><span class="sup-tag">Denim</span><span class="sup-tag">BSCI</span></div>
+        </div>
+
+        <div class="sup-card">
+          <div class="sup-top"><span class="sup-name">Pacific Stitch</span><span class="sup-rec">Agent Recommended</span></div>
+          <div class="sup-loc"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Ho Chi Minh City, Vietnam</div>
+          <div class="sup-stats"><div><span class="sup-stat-label">Quality</span><div class="sup-stat-value" style="color:var(--agent)">96.1%</div></div><div><span class="sup-stat-label">On-Time</span><div class="sup-stat-value">97%</div></div><div><span class="sup-stat-label">Orders</span><div class="sup-stat-value">2</div></div></div>
+          <div class="sup-agent-notes">
+            <div class="sup-agent-note"><strong>SCOUT:</strong> Recently qualified for outerwear expansion</div>
+            <div class="sup-agent-note"><strong>TRACKER:</strong> SMP-0892 en route — arrives Aug 3 (on time)</div>
+            <div class="sup-agent-note"><strong>ANALYST:</strong> Vietnam labor +4.2% YoY — watch Q4 pricing</div>
+          </div>
+          <div class="sup-tags"><span class="sup-tag">Outerwear</span><span class="sup-tag">Technical</span><span class="sup-tag">GRS</span></div>
+        </div>
+
+        <div class="sup-card">
+          <div class="sup-top"><span class="sup-name">Alpina Mills</span></div>
+          <div class="sup-loc"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Como, Italy</div>
+          <div class="sup-stats"><div><span class="sup-stat-label">Quality</span><div class="sup-stat-value" style="color:var(--agent)">99.1%</div></div><div><span class="sup-stat-label">On-Time</span><div class="sup-stat-value">88%</div></div><div><span class="sup-stat-label">Orders</span><div class="sup-stat-value">1</div></div></div>
+          <div class="sup-agent-notes">
+            <div class="sup-agent-note"><strong>NEGOTIATOR:</strong> Responds 40% faster to volume-based counters</div>
+            <div class="sup-agent-note"><strong>SENTINEL:</strong> 99.1% quality — highest in network</div>
+            <div class="sup-agent-note"><strong>ANALYST:</strong> 4% premium vs market justified by zero-defect record</div>
+          </div>
+          <div class="sup-tags"><span class="sup-tag">Silk</span><span class="sup-tag">Luxury</span><span class="sup-tag">OEKO-TEX</span></div>
+        </div>
+
+        <div class="sup-card">
+          <div class="sup-top"><span class="sup-name">EcoTex Innovations</span><span class="sup-rec" style="background:var(--info-glow);color:var(--info)">Newly Discovered</span></div>
+          <div class="sup-loc"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Istanbul, Turkey</div>
+          <div class="sup-stats"><div><span class="sup-stat-label">Quality</span><div class="sup-stat-value" style="color:var(--agent)">96%</div></div><div><span class="sup-stat-label">On-Time</span><div class="sup-stat-value">N/A</div></div><div><span class="sup-stat-label">Orders</span><div class="sup-stat-value">0</div></div></div>
+          <div class="sup-agent-notes">
+            <div class="sup-agent-note"><strong>SCOUT:</strong> Found 12 min ago — GRS + GOTS dual-certified</div>
+            <div class="sup-agent-note"><strong>SCOUT:</strong> $36.20/unit for recycled nylon (6.6% below target)</div>
+            <div class="sup-agent-note"><strong>GUARDIAN:</strong> UFLPA traceability check pending</div>
+          </div>
+          <div class="sup-tags"><span class="sup-tag">Recycled Nylon</span><span class="sup-tag">GRS</span><span class="sup-tag">GOTS</span></div>
+        </div>
+
+        <div class="sup-card">
+          <div class="sup-top"><span class="sup-name">RecyFiber Co.</span><span class="sup-rec" style="background:var(--info-glow);color:var(--info)">Newly Discovered</span></div>
+          <div class="sup-loc"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Seoul, South Korea</div>
+          <div class="sup-stats"><div><span class="sup-stat-label">Quality</span><div class="sup-stat-value" style="color:var(--agent)">94%</div></div><div><span class="sup-stat-label">On-Time</span><div class="sup-stat-value">N/A</div></div><div><span class="sup-stat-label">Orders</span><div class="sup-stat-value">0</div></div></div>
+          <div class="sup-agent-notes">
+            <div class="sup-agent-note"><strong>SCOUT:</strong> Found 12 min ago — GRS + OEKO-TEX certified</div>
+            <div class="sup-agent-note"><strong>SCOUT:</strong> $35.80/unit for recycled nylon (7.6% below target)</div>
+            <div class="sup-agent-note"><strong>GUARDIAN:</strong> UFLPA traceability check pending</div>
+          </div>
+          <div class="sup-tags"><span class="sup-tag">Recycled Nylon</span><span class="sup-tag">GRS</span><span class="sup-tag">OEKO-TEX</span></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+var titles={mission:'Mission Control',decisions:'Decision Queue',agents:'Agent Fleet',intel:'Intelligence',network:'Supply Network'};
+function go(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(n){n.classList.remove('active')});
+  var pg=document.getElementById('page-'+id);
+  var nv=document.querySelector('.nav-item[data-page="'+id+'"]');
+  if(pg)pg.classList.add('active');
+  if(nv)nv.classList.add('active');
+}
+var now=new Date();
+var el=document.getElementById('mcDate');
+if(el)el.textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+function toggleEvidence(id){
+  var el=document.getElementById(id);
+  if(el)el.classList.toggle('open');
+}
+
+function approveCard(id){
+  var card=document.getElementById(id);
+  if(!card)return;
+  card.classList.add('approved');
+  setTimeout(function(){card.style.maxHeight=card.offsetHeight+'px';card.style.overflow='hidden';card.style.transition='max-height .3s ease, opacity .3s ease, margin .3s ease, padding .3s ease';requestAnimationFrame(function(){card.style.maxHeight='0';card.style.opacity='0';card.style.marginTop='0';card.style.marginBottom='0';card.style.paddingTop='0';card.style.paddingBottom='0';});},800);
+}
+
+function closeCmdResponse(){document.getElementById('cmdResponse').classList.remove('show');}
+
+var cmdResponses=[
+  {kw:['supplier','find','source','search'],agent:'SCOUT',text:'Searching supplier network... Found <strong>3 suppliers</strong> matching your criteria across Turkey and Vietnam. <strong>EcoTex Innovations</strong> (Istanbul) offers the best price-quality ratio at $36.20/unit with GRS + GOTS dual certification and a 96% quality score across 22 verified orders. Two alternatives also qualify. Shall I add them to your active RFQ?'},
+  {kw:['price','cost','cotton','futures','market'],agent:'ANALYST',text:'Current cotton futures are up <strong>8.3% this month</strong>. Below-average monsoon forecasts in India and Pakistan are driving prices higher. Your Q4 orders have a combined exposure of <strong>~$2,400</strong> at current rates. I recommend locking pricing with Zenith Textiles and GreenWeave within 5 business days. Confidence: 82%.'},
+  {kw:['quality','inspection','test','sentinel','defect'],agent:'SENTINEL',text:'Monitoring <strong>3 active inspections</strong>. Current overall quality score: <strong>96.4%</strong>. One active alert: GreenWeave batch #B-4401 failed color fastness (Delta E 3.2 vs 2.0 threshold). This is their second color issue in 6 months — risk profile has been elevated. Recommend holding the 1,200-unit shipment pending root cause analysis.'},
+  {kw:['ship','track','delivery','logistics','eta'],agent:'TRACKER',text:'Tracking <strong>5 active shipments</strong>. 4 on schedule, 1 flagged: <strong>PO-1184</strong> from Dhaka has a potential 2-day delay due to port congestion. Sample shipment SMP-0892 from Ho Chi Minh City is on track — ETA Aug 3. Next customs clearance expected: PO-1186 at Vancouver port, Aug 5.'},
+  {kw:['comply','compliance','uflpa','gots','certif'],agent:'GUARDIAN',text:'All <strong>4 active suppliers</strong> are currently compliant. Recent activity: verified Zenith Textiles GOTS renewal (valid through 2027), completed UFLPA traceability check on 3 suppliers (all clear). Pending: traceability review for 2 newly discovered suppliers (EcoTex Innovations, RecyFiber Co.) — will begin once SCOUT qualification is complete.'},
+];
+document.getElementById('cmdInput').addEventListener('keydown',function(e){
+  if(e.key!=='Enter'||!this.value.trim())return;
+  var q=this.value.toLowerCase();
+  var match=cmdResponses.find(function(r){return r.kw.some(function(k){return q.indexOf(k)!==-1;});});
+  if(!match)match={agent:'SCOUT',text:'I\'ll investigate that for you. Scanning the supply chain network and cross-referencing with active agent intelligence... This may take a moment. I\'ll surface results in the operations feed when ready.'};
+  document.getElementById('cmdRespAgent').textContent=match.agent;
+  document.getElementById('cmdRespText').innerHTML=match.text;
+  document.getElementById('cmdResponse').classList.add('show');
+  this.value='';
+});
+</script>
